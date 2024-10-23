@@ -4,7 +4,8 @@ TrOCR model that converts images of handwitten notes into LaTeX format. The goal
 
 The final goal is to create three models:
 
-- TrOCR for converting images to LaTeX. (Work in progress...)
+- TrOCR to extract text form images. (Work in progress...)
+- Layout recognition model.
 - Original transformer to translate LaTeX and Markdown.
 - Language model to analyze, structure and access notes.
 
