@@ -15,3 +15,13 @@ def get_device(args, no_cuda=False):
     if available_gpus > 0 and not no_cuda:
         device = 'cuda:%d' % args.gpu_devices[0] if args.gpu_devices else 0
     return device
+
+def path_exists(path):
+    try:
+        with open(path, "r"):
+            pass
+        return True
+    except FileNotFoundError:
+        print("Path does not exist")
+        return False
+        
