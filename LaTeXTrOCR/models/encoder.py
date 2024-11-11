@@ -17,3 +17,5 @@ class PatchEmbedding(nn.Module):
     return self.projection(x)
   
 
+class Attention(nn.Module):
+  
