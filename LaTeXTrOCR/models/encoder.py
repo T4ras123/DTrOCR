@@ -16,6 +16,3 @@ class PatchEmbedding(nn.Module):
   def forward(self, x):
     return self.projection(x)
   
-
-class Attention(nn.Module):
-  

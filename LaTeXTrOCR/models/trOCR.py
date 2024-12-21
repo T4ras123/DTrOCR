@@ -8,6 +8,8 @@ import os
 import sys
 import tiktoken
 from PIL import Image
+from LaTeXTrOCR.models.encoder import PatchEmbedding    
+from LaTeXTrOCR.dataset.transforms import train_transform, test_transform
 
 @dataclass
 class OCRConfig:
@@ -16,7 +18,52 @@ class OCRConfig:
     n_heads:int = 8
     n_embed:int = 512
     batch_size:int = 32
+    patch_size:int = 16
+    image_size:int = 244
+    
+
+class ImagePreprocessor(nn.Module):
+    def __init__(self, config: OCRConfig, tokenizer, language_options=["LaTeX", "Markdown"], test=False):
+        super(ImagePreprocessor, self).__init__()
+        self.transform = train_transform
+        self.patch_embedding = PatchEmbedding(
+            in_channels=3, 
+            patch_size=config.patch_size, 
+            emb_siz=config.n_embed
+        )
+        num_patches = (config.image_size // config.patch_size) ** 2
+        self.positional_embedding = nn.Embedding(num_patches, config.n_embed)
         
+        self.language_token = {lang: tokenizer.encode(f"<{lang}>")[0] for lang in language_options}
+        self.language_embedding = nn.Embedding(len(language_options), config.n_embed)
+        self.language_map = {lang: idx for idx, lang in enumerate(language_options)}
+        
+    def forward(self, image, language):
+        """
+        Args:
+            image (PIL.Image): Input image.
+            language (str): Target language, either "LaTeX" or "Markdown".
+        
+        Returns:
+            torch.Tensor: Combined embeddings.
+        """
+        transformed_image = self.transform(image)
+        
+        patches = self.patch_embedding(transformed_image)  
+        
+        num_patches = patches.size(1)
+        positions = torch.arange(num_patches, device=patches.device).unsqueeze(0).expand(patches.size(0), -1)
+        pos_emb = self.positional_embedding(positions) 
+        
+        lang_idx = torch.tensor([self.language_map[language]], device=patches.device)
+        lang_emb = self.language_embedding(lang_idx)  
+        lang_emb = lang_emb.unsqueeze(1).expand(-1, num_patches, -1)  
+        
+        embeddings = patches + pos_emb + lang_emb  
+        
+        return embeddings
+        
+
 class Self_Attention(nn.Module):
     def __init__(self, config:OCRConfig):
         super().__init__()
@@ -144,3 +191,7 @@ class ImageLaTeXDataset(Dataset):
         text = self.latex_texts[idx]
         encoding = self.tokenizer(text, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         return image, encoding['input_ids'].squeeze()
+    
+    
+def prepare_input(image, language, tokenizer, transform=None):
+    image_embed = transform(image)
