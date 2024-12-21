@@ -192,6 +192,3 @@ class ImageLaTeXDataset(Dataset):
         encoding = self.tokenizer(text, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         return image, encoding['input_ids'].squeeze()
     
-    
-def prepare_input(image, language, tokenizer, transform=None):
-    image_embed = transform(image)
