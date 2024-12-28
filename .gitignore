@@ -5,3 +5,5 @@ test.ipynb
 /LaTeXTrOCR/__pycache__/*
 /LaTeXTrOCR/dataset/__pycache__/*
 /LaTeXTrOCR/final_png_formulas.txt
+/LaTeXTrOCR/dataset/arxiv_papers
+/LaTeXTrOCR/dataset/data.txt
