@@ -4,8 +4,6 @@ import torch.nn.functional as F
 from torch.optim import AdamW
 from dataclasses import dataclass
 from torch.utils.data import DataLoader, Dataset
-import os
-import sys
 import tiktoken
 from PIL import Image
 from LaTeXTrOCR.models.encoder import PatchEmbedding    
