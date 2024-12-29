@@ -21,7 +21,6 @@ def download_arxiv_papers(query, max_results=10, output_dir="arxiv_papers"):
         result.download_source(filename=tar_path)
 
 def extract_and_process_tar_files(input_dir, output_file):
-    os.makedirs("temp", exist_ok=True)  # Temporary directory for extracted files
     
     with open(output_file, "w", encoding="utf-8") as outfile:
         for file_name in os.listdir(input_dir):
@@ -33,11 +32,9 @@ def extract_and_process_tar_files(input_dir, output_file):
                 try:
                     with tarfile.open(tar_path) as tar:
                         tar.extractall(path=temp_dir)
-                    print(f"Extracted {tar_path} to {temp_dir}")
                 except tarfile.ReadError:
-                    print(f"Failed to extract {tar_path}: Not a valid tar file.")
                     continue
-                
+                count = 0
                 # Process LaTeX files
                 for root, _, files in os.walk(temp_dir):
                     for file in files:
@@ -47,17 +44,15 @@ def extract_and_process_tar_files(input_dir, output_file):
                                 with open(tex_path, "r", encoding="utf-8") as texfile:
                                     content = texfile.read()
                                 outfile.write(content + "\n<|endtext|>\n")
-                                print(f"Succesfully processed {tex_path}")
+                                count += 1
                             except Exception as e:
                                 print(f"Error processing {tex_path}: {e}")
                 
-                # Clean up extracted files
-                shutil.rmtree(temp_dir)
-                print(f"Deleted temporary directory: {temp_dir}")
                 
-                # Remove tar.gz file
+                print(f"Processed {count} LaTeX files from {tar_path}")
+                shutil.rmtree(temp_dir)
+                
                 os.remove(tar_path)
-                print(f"Deleted archive: {tar_path}")
 
 def main():
     queries = [
@@ -89,7 +84,9 @@ def main():
     "stochastic processes in finance",
     "general science",
     "interdisciplinary studies",
-    "scientific review papers"
+    "scientific review papers",
+    "research methodology",
+    "scientific writing",
     ]
     output_dir = "arxiv_papers"
     output_file = "data.txt"
@@ -97,7 +94,7 @@ def main():
     with tqdm.tqdm(total=len(queries), desc="Processing Queries") as pbar:
         for query in queries:
             print(f"\nProcessing papers for query: {query}")
-            download_arxiv_papers(query, max_results=50, output_dir=output_dir)
+            download_arxiv_papers(query, max_results=100, output_dir=output_dir)
             extract_and_process_tar_files(output_dir, output_file)
             pbar.update(1)
 
