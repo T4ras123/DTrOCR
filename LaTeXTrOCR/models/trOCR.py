@@ -192,3 +192,24 @@ class ImageLaTeXDataset(Dataset):
         encoding = self.tokenizer(text, return_tensors='pt', max_length=self.max_length, truncation=True, padding='max_length')
         return image, encoding['input_ids'].squeeze()
     
+if __name__ == "__main__":
+    config = OCRConfig()
+    model = OCR(config)
+    optimizer = AdamW(model.parameters(), lr=1e-4)
+    criterion = nn.CrossEntropyLoss()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+    
+    text_loader = TextLoader(config.batch_size, config.patch_size)
+
+    for epoch in range(10):
+        for i in range(100):
+            x, y = text_loader.next_batch()
+            x, y = x.to(device), y.to(device)
+            logits, loss = model(x, y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            print(f"Epoch {epoch}, Step {i}, Loss {loss.item()}")
+            
+    torch.save(model.state_dict(), "./weights/ocr_text.pth")
