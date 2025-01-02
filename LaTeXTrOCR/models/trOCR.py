@@ -18,6 +18,7 @@ class OCRConfig:
     batch_size:int = 32
     patch_size:int = 16
     image_size:int = 244
+    num_languages:int = 2
     
 
 class ImagePreprocessor(nn.Module):
@@ -31,6 +32,7 @@ class ImagePreprocessor(nn.Module):
         )
         num_patches = (config.image_size // config.patch_size) ** 2
         self.positional_embedding = nn.Embedding(num_patches, config.n_embed)
+
         
         self.language_token = {lang: tokenizer.encode(f"<{lang}>")[0] for lang in language_options}
         self.language_embedding = nn.Embedding(len(language_options), config.n_embed)
@@ -116,19 +118,33 @@ class OCR(nn.Module):
         self.config = config
         self.transformer = nn.ModuleDict(dict(
             wte = nn.Embedding(config.vocab_size, config.n_embd),
+            # language embedding, LaTeX or Markdown
+            lang_emb = nn.Embedding(config.num_languages, config.n_embd)
             wpe = nn.Embedding(config.block_size, config.n_embd),
             h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
             ln_f = nn.LayerNorm(config.n_embd)
         ))
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         
-    def forward(self, idx, targets=None):
+    def forward(self, idx, lang, targets=None):
         _, T = idx.size()
         assert T <= self.config.block_size 
         pos = torch.arange(T, dtype=torch.long, device=idx.device)
         pos_emb = self.transformer['wpe'](pos)
         tok_emb = self.transformer['wte'](idx)
-        x = pos_emb + tok_emb
+
+        if lang == "LaTeX":
+            lang_idx = 0
+        elif lang == "Markdown":
+            lang_idx = 1
+        else:
+            raise ValueError("Unsupported language")
+
+        lang_emb = self.transformer['lang_emb'](torch.tensor(lang_idx, device=idx.device))
+        lang_emb = lang_emb.unsqueeze(0).unsqueeze(1).expand(batch_size, T, self.config.n_embd)
+
+        x = pos_emb + tok_emb + lang_emb
+        
         for block in self.transformer['h']:
             x = block(x)
         x = self.transformer['ln_f'](x)
