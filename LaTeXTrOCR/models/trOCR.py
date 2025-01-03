@@ -119,7 +119,7 @@ class OCR(nn.Module):
         self.transformer = nn.ModuleDict(dict(
             wte = nn.Embedding(config.vocab_size, config.n_embd),
             # language embedding, LaTeX or Markdown
-            lang_emb = nn.Embedding(config.num_languages, config.n_embd)
+            lang_emb = nn.Embedding(config.num_languages, config.n_embd),
             wpe = nn.Embedding(config.block_size, config.n_embd),
             h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
             ln_f = nn.LayerNorm(config.n_embd)
@@ -141,7 +141,7 @@ class OCR(nn.Module):
             raise ValueError("Unsupported language")
 
         lang_emb = self.transformer['lang_emb'](torch.tensor(lang_idx, device=idx.device))
-        lang_emb = lang_emb.unsqueeze(0).unsqueeze(1).expand(batch_size, T, self.config.n_embd)
+        lang_emb = lang_emb.unsqueeze(0).unsqueeze(1).expand(self.config.batch_size, T, self.config.n_embd)
 
         x = pos_emb + tok_emb + lang_emb
         
